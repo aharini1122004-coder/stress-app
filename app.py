@@ -1,5 +1,3 @@
-# ---- LIVE ANALYSIS ----
-
 st.subheader("📊 Live Financial Indicators")
 
 if credit > 0:
