@@ -1,3 +1,7 @@
+import streamlit as st
+import joblib
+import numpy as np
+import os
 st.subheader("📊 Live Financial Indicators")
 
 if credit > 0:
