@@ -7,16 +7,14 @@ import os
 model_path = os.path.join(os.path.dirname(__file__), "stress_model.pkl")
 model = joblib.load(model_path)
 
-# Page config
 st.set_page_config(page_title="Stress Predictor", layout="centered")
 
-# Title
 st.title("💳 Customer Stress Prediction")
-st.markdown("### Analyze customer financial stress using ML")
+st.markdown("### ML + Rule-Based Analysis")
 
 st.divider()
 
-# Layout in 2 columns
+# Inputs
 col1, col2 = st.columns(2)
 
 with col1:
@@ -30,27 +28,88 @@ with col2:
 
 st.divider()
 
-# Predict button
+# ---- RULE BASED FUNCTION ----
+def rule_based(util, trans_amt, credit, balance):
+    score = 0
+    spending_ratio = trans_amt / credit
+
+    # Utilization
+    if util > 0.7:
+        score += 2
+    elif util > 0.4:
+        score += 1
+
+    # Spending
+    if spending_ratio > 0.5:
+        score += 2
+    elif spending_ratio > 0.3:
+        score += 1
+
+    # Balance
+    if balance > 2000:
+        score += 2
+    elif balance > 1000:
+        score += 1
+
+    if score >= 4:
+        return "High Stress", score
+    elif score >= 2:
+        return "Medium Stress", score
+    else:
+        return "Low Stress", score
+
+# ---- PREDICTION ----
 if st.button("🔍 Predict Stress Level"):
 
-    if credit == 0:
-        st.error("Credit limit cannot be zero")
-    else:
-        data = np.array([[util, trans_amt, credit, balance, trans_ct]])
-        prediction = model.predict(data)[0]
+    data = np.array([[util, trans_amt, credit, balance, trans_ct]])
+    ml_pred = model.predict(data)[0]
 
-        labels = {0: "Low Stress", 1: "Medium Stress", 2: "High Stress"}
+    labels = {0: "Low Stress", 1: "Medium Stress", 2: "High Stress"}
+    ml_result = labels[ml_pred]
 
-        result = labels[prediction]
+    rule_result, score = rule_based(util, trans_amt, credit, balance)
 
-        # Color output
-        if result == "Low Stress":
-            st.success(f"✅ {result}")
-            st.info("Customer is financially stable.")
-        elif result == "Medium Stress":
-            st.warning(f"⚠️ {result}")
-            st.info("Customer shows moderate financial pressure.")
+    # Display results
+    st.subheader("📊 Results")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### 🤖 ML Prediction")
+        if ml_result == "Low Stress":
+            st.success(ml_result)
+        elif ml_result == "Medium Stress":
+            st.warning(ml_result)
         else:
-            st.error(f"🚨 {result}")
-            st.info("Customer may be under high financial stress.")
+            st.error(ml_result)
 
+    with col2:
+        st.markdown("### 📏 Rule-Based")
+        if rule_result == "Low Stress":
+            st.success(rule_result)
+        elif rule_result == "Medium Stress":
+            st.warning(rule_result)
+        else:
+            st.error(rule_result)
+
+    st.divider()
+
+    # Explanation
+    st.subheader("🧠 Explanation")
+
+    spending_ratio = trans_amt / credit
+
+    st.write(f"• Spending Ratio: {round(spending_ratio,2)}")
+    st.write(f"• Rule Score: {score}")
+
+    if spending_ratio > 0.3:
+        st.write("⚠️ Higher spending compared to credit limit")
+    if balance > 1000:
+        st.write("⚠️ High revolving balance")
+    if util > 0.4:
+        st.write("⚠️ High credit utilization")
+
+    st.caption("ML prediction is based on learned data patterns, so it may differ from rule-based results.")
+
+
+           
